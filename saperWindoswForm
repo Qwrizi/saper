@@ -296,20 +296,22 @@ namespace Minesweeper
 
             if (fieldValues[row, col] == -1)
             {
-
                 fieldButtons[row, col].Text = "💣";
                 fieldButtons[row, col].BackColor = Color.Red;
             }
             else if (fieldValues[row, col] > 0)
             {
-                fieldButtons[row, col].Text = fieldValues[row, col].ToString(); //число
-                fieldButtons[row, col].ForeColor = GetNumberColor(fieldValues[row, col]);
+                fieldButtons[row, col].Text = fieldValues[row, col].ToString();
+                fieldButtons[row, col].ForeColor = GetNumberColor(fieldValues[row, col]); 
             }
             else
             {
-                fieldButtons[row, col].Text = ""; //открытие соседних клеток
+                fieldButtons[row, col].Text = "";
                 fieldButtons[row, col].BackColor = SystemColors.ControlLight;
+            }
 
+            if (fieldValues[row, col] == 0)
+            {
                 for (int i = Math.Max(0, row - 1); i <= Math.Min(fieldSize - 1, row + 1); i++)
                 {
                     for (int j = Math.Max(0, col - 1); j <= Math.Min(fieldSize - 1, col + 1); j++)
@@ -328,11 +330,11 @@ namespace Minesweeper
             switch (number)
             {
                 case 1: return Color.Blue;
-                case 2: return Color.Green;
+                case 2: return Color.FromArgb(0, 128, 0); 
                 case 3: return Color.Red;
-                case 4: return Color.DarkBlue;
-                case 5: return Color.Brown;
-                case 6: return Color.Teal;
+                case 4: return Color.FromArgb(0, 0, 128);
+                case 5: return Color.FromArgb(128, 0, 0); 
+                case 6: return Color.FromArgb(0, 128, 128); 
                 case 7: return Color.Black;
                 case 8: return Color.Gray;
                 default: return Color.Black;
@@ -357,7 +359,7 @@ namespace Minesweeper
         private void GameOver(bool isWin)
         {
             gameOver = true;
-            for (int i = 0; i < fieldSize; i++) //открытие клеток
+            for (int i = 0; i < fieldSize; i++)
             {
                 for (int j = 0; j < fieldSize; j++)
                 {
@@ -373,7 +375,7 @@ namespace Minesweeper
                         else if (fieldValues[i, j] > 0)
                         {
                             fieldButtons[i, j].Text = fieldValues[i, j].ToString();
-                            fieldButtons[i, j].ForeColor = GetNumberColor(fieldValues[i, j]);
+                            fieldButtons[i, j].ForeColor = GetNumberColor(fieldValues[i, j]); 
                         }
                     }
                 }
@@ -387,6 +389,11 @@ namespace Minesweeper
             {
                 MessageBox.Show("Вы проиграли! Попробуйте еще раз.", "Поражение");
             }
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
