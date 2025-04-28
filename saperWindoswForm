@@ -1,0 +1,385 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Minesweeper
+{
+    public partial class MainForm : Form
+    {
+        private Button[,] fieldButtons;
+        private int[,] fieldValues;
+        private bool[,] revealed;
+        private int fieldSize = 10;
+        private int minesCount = 15;
+        private bool gameOver = false;
+        private bool firstClick = true;
+        private int flagsPlaced = 0;
+
+        private MenuStrip menuStrip;
+        private ToolStripMenuItem gameToolStripMenuItem;
+        private ToolStripMenuItem newGameToolStripMenuItem;
+        private ToolStripMenuItem settingsToolStripMenuItem;
+        private ToolStripMenuItem exitToolStripMenuItem;
+        private Panel gamePanel;
+        private Label minesLabel;
+        private ComboBox sizeComboBox;
+        private ComboBox minesComboBox;
+        private Label sizeLabel;
+        private Label minesCountLabel;
+
+        public MainForm()
+        {
+            InitializeComponent();
+            InitializeMenu();
+            InitializeControls();
+            StartNewGame();
+        }
+
+        private void InitializeMenu()
+        {
+            menuStrip = new MenuStrip();
+            gameToolStripMenuItem = new ToolStripMenuItem("Игра");
+            newGameToolStripMenuItem = new ToolStripMenuItem("Новая игра");
+            settingsToolStripMenuItem = new ToolStripMenuItem("Настройки");
+            exitToolStripMenuItem = new ToolStripMenuItem("Выход");
+
+            gameToolStripMenuItem.DropDownItems.Add(newGameToolStripMenuItem);
+            gameToolStripMenuItem.DropDownItems.Add(settingsToolStripMenuItem);
+            gameToolStripMenuItem.DropDownItems.Add(new ToolStripSeparator());
+            gameToolStripMenuItem.DropDownItems.Add(exitToolStripMenuItem);
+
+            menuStrip.Items.Add(gameToolStripMenuItem);
+            this.Controls.Add(menuStrip);
+            this.MainMenuStrip = menuStrip;
+
+            newGameToolStripMenuItem.Click += (s, e) => StartNewGame();
+            settingsToolStripMenuItem.Click += (s, e) => ShowSettings();
+            exitToolStripMenuItem.Click += (s, e) => this.Close();
+        }
+
+        private void InitializeControls()
+        {
+            gamePanel = new Panel();
+            gamePanel.Location = new Point(10, 100);
+            gamePanel.BorderStyle = BorderStyle.FixedSingle;
+            this.Controls.Add(gamePanel);
+
+            minesLabel = new Label();
+            minesLabel.Text = "Флаги: 0/" + minesCount;
+            minesLabel.Location = new Point(10, 70);
+            minesLabel.AutoSize = true;
+            minesLabel.Font = new Font("Arial", 12, FontStyle.Bold);
+            this.Controls.Add(minesLabel);
+
+            sizeLabel = new Label();
+            sizeLabel.Text = "Размер поля:";
+            sizeLabel.Location = new Point(10, 10);
+            sizeLabel.AutoSize = true;
+            this.Controls.Add(sizeLabel);
+
+            sizeComboBox = new ComboBox();
+            sizeComboBox.Location = new Point(100, 10);
+            sizeComboBox.Items.AddRange(new object[] { "Маленькое (10x10)", "Среднее (15x15)", "Большое (20x20)" });
+            sizeComboBox.SelectedIndex = 0;
+            sizeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            this.Controls.Add(sizeComboBox);
+
+            minesCountLabel = new Label();
+            minesCountLabel.Text = "Количество мин:";
+            minesCountLabel.Location = new Point(10, 40);
+            minesCountLabel.AutoSize = true;
+            this.Controls.Add(minesCountLabel);
+
+            minesComboBox = new ComboBox();
+            minesComboBox.Location = new Point(100, 40);
+            minesComboBox.Items.AddRange(new object[] { "Легко (15 мин)", "Средне (30 мин)", "Сложно (50 мин)" });
+            minesComboBox.SelectedIndex = 0;
+            minesComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            this.Controls.Add(minesComboBox);
+
+            Button newGameButton = new Button();
+            newGameButton.Text = "Новая игра";
+            newGameButton.Location = new Point(300, 25);
+            newGameButton.Click += (s, e) => StartNewGame();
+            this.Controls.Add(newGameButton);
+
+            this.Text = "Сапер";
+            this.BackColor = Color.LightGray;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+        }
+
+        private void ShowSettings()
+        {
+            MessageBox.Show("Выберите размер поля и количество мин в меню перед началом игры.", "Настройки");
+        }
+
+        private void StartNewGame()
+        {
+            switch (sizeComboBox.SelectedIndex)
+            {
+                case 0: fieldSize = 10; break;
+                case 1: fieldSize = 15; break;
+                case 2: fieldSize = 20; break;
+            }
+
+            switch (minesComboBox.SelectedIndex)
+            {
+                case 0: minesCount = 15; break;
+                case 1: minesCount = 30; break;
+                case 2: minesCount = 50; break;
+            }
+
+            if (minesCount >= fieldSize * fieldSize)
+            {
+                minesCount = fieldSize * fieldSize - 1;
+            }
+
+            minesLabel.Text = "Флаги: 0/" + minesCount;
+            flagsPlaced = 0;
+
+            gamePanel.Controls.Clear();
+            fieldButtons = new Button[fieldSize, fieldSize];
+            fieldValues = new int[fieldSize, fieldSize];
+            revealed = new bool[fieldSize, fieldSize];
+
+            gamePanel.Size = new Size(fieldSize * 30, fieldSize * 30);
+            this.ClientSize = new Size(Math.Max(fieldSize * 30 + 20, 400), fieldSize * 30 + 120);
+
+            for (int i = 0; i < fieldSize; i++)
+            {
+                for (int j = 0; j < fieldSize; j++)
+                {
+                    fieldButtons[i, j] = new Button();
+                    fieldButtons[i, j].Size = new Size(30, 30);
+                    fieldButtons[i, j].Location = new Point(j * 30, i * 30);
+                    fieldButtons[i, j].Font = new Font("Arial", 10, FontStyle.Bold);
+                    fieldButtons[i, j].Tag = new Point(i, j);
+                    fieldButtons[i, j].MouseDown += FieldButton_MouseDown;
+                    gamePanel.Controls.Add(fieldButtons[i, j]);
+                }
+            }
+
+            gameOver = false;
+            firstClick = true;
+
+            for (int i = 0; i < fieldSize; i++)
+            {
+                for (int j = 0; j < fieldSize; j++)
+                {
+                    fieldValues[i, j] = 0;
+                    revealed[i, j] = false;
+                    fieldButtons[i, j].Text = "";
+                    fieldButtons[i, j].BackColor = SystemColors.Control;
+                    fieldButtons[i, j].Enabled = true;
+                }
+            }
+        }
+
+        private void FieldButton_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (gameOver) return;
+
+            Button button = (Button)sender;
+            Point position = (Point)button.Tag;
+            int row = position.X;
+            int col = position.Y;
+
+            if (e.Button == MouseButtons.Left)
+            {
+                if (firstClick)
+                {
+                    GenerateField(row, col);
+                    firstClick = false;
+                }
+
+                if (button.Text == "🚩") return;
+
+                RevealCell(row, col);
+
+                if (fieldValues[row, col] == -1)
+                {
+                    GameOver(false);
+                }
+                else if (CheckWin())
+                {
+                    GameOver(true);
+                }
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                if (!revealed[row, col])
+                {
+                    if (button.Text == "🚩")
+                    {
+                        button.Text = "";
+                        flagsPlaced--;
+                    }
+                    else
+                    {
+                        button.Text = "🚩";
+                        flagsPlaced++;
+                    }
+                    minesLabel.Text = $"Флаги: {flagsPlaced}/{minesCount}";
+                }
+            }
+        }
+
+        private void GenerateField(int safeRow, int safeCol)
+        {
+            Random random = new Random();
+
+            int minesPlaced = 0;
+            while (minesPlaced < minesCount)
+            {
+                int row = random.Next(fieldSize);
+                int col = random.Next(fieldSize);
+
+                if ((row == safeRow && col == safeCol) ||
+                    (Math.Abs(row - safeRow) <= 1 && Math.Abs(col - safeCol) <= 1))
+                {
+                    continue;
+                }
+
+                if (fieldValues[row, col] != -1)
+                {
+                    fieldValues[row, col] = -1;
+                    minesPlaced++;
+                }
+            }
+            for (int i = 0; i < fieldSize; i++)
+            {
+                for (int j = 0; j < fieldSize; j++)
+                {
+                    if (fieldValues[i, j] != -1)
+                    {
+                        fieldValues[i, j] = CountAdjacentMines(i, j);
+                    }
+                }
+            }
+        }
+
+        private int CountAdjacentMines(int row, int col)
+        {
+            int count = 0;
+
+            for (int i = Math.Max(0, row - 1); i <= Math.Min(fieldSize - 1, row + 1); i++)
+            {
+                for (int j = Math.Max(0, col - 1); j <= Math.Min(fieldSize - 1, col + 1); j++)
+                {
+                    if (fieldValues[i, j] == -1)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        private void RevealCell(int row, int col)
+        {
+            if (row < 0 || row >= fieldSize || col < 0 || col >= fieldSize || revealed[row, col])
+            {
+                return;
+            }
+
+            revealed[row, col] = true;
+            fieldButtons[row, col].Enabled = false;
+
+            if (fieldValues[row, col] == -1)
+            {
+                fieldButtons[row, col].Text = "💣";
+                fieldButtons[row, col].BackColor = Color.Red;
+            }
+            else if (fieldValues[row, col] > 0)
+            {
+                fieldButtons[row, col].Text = fieldValues[row, col].ToString();
+                fieldButtons[row, col].ForeColor = GetNumberColor(fieldValues[row, col]);
+            }
+            else
+            {
+                fieldButtons[row, col].Text = "";
+                fieldButtons[row, col].BackColor = SystemColors.ControlLight;
+
+                for (int i = Math.Max(0, row - 1); i <= Math.Min(fieldSize - 1, row + 1); i++)
+                {
+                    for (int j = Math.Max(0, col - 1); j <= Math.Min(fieldSize - 1, col + 1); j++)
+                    {
+                        if (i != row || j != col)
+                        {
+                            RevealCell(i, j);
+                        }
+                    }
+                }
+            }
+        }
+
+        private Color GetNumberColor(int number)
+        {
+            switch (number)
+            {
+                case 1: return Color.Blue;
+                case 2: return Color.Green;
+                case 3: return Color.Red;
+                case 4: return Color.DarkBlue;
+                case 5: return Color.Brown;
+                case 6: return Color.Teal;
+                case 7: return Color.Black;
+                case 8: return Color.Gray;
+                default: return Color.Black;
+            }
+        }
+
+        private bool CheckWin()
+        {
+            for (int i = 0; i < fieldSize; i++)
+            {
+                for (int j = 0; j < fieldSize; j++)
+                {
+                    if (fieldValues[i, j] != -1 && !revealed[i, j])
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private void GameOver(bool isWin)
+        {
+            gameOver = true;
+
+            for (int i = 0; i < fieldSize; i++)
+            {
+                for (int j = 0; j < fieldSize; j++)
+                {
+                    if (!revealed[i, j])
+                    {
+                        revealed[i, j] = true;
+                        fieldButtons[i, j].Enabled = false;
+
+                        if (fieldValues[i, j] == -1)
+                        {
+                            fieldButtons[i, j].Text = "💣";
+                        }
+                        else if (fieldValues[i, j] > 0)
+                        {
+                            fieldButtons[i, j].Text = fieldValues[i, j].ToString();
+                            fieldButtons[i, j].ForeColor = GetNumberColor(fieldValues[i, j]);
+                        }
+                    }
+                }
+            }
+
+            if (isWin)
+            {
+                MessageBox.Show("Поздравляем! Вы победили!", "Победа");
+            }
+            else
+            {
+                MessageBox.Show("Вы проиграли! Попробуйте еще раз.", "Поражение");
+            }
+        }
+    }
+}
