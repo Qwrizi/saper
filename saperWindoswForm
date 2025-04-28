@@ -60,46 +60,51 @@ namespace Minesweeper
         private void InitializeControls()
         {
             gamePanel = new Panel();
-            gamePanel.Location = new Point(10, 100);
+            gamePanel.Location = new Point(10, 130);
             gamePanel.BorderStyle = BorderStyle.FixedSingle;
             this.Controls.Add(gamePanel);
 
             minesLabel = new Label();
             minesLabel.Text = "Флаги: 0/" + minesCount;
-            minesLabel.Location = new Point(10, 70);
+            minesLabel.Location = new Point(10, 100);
             minesLabel.AutoSize = true;
             minesLabel.Font = new Font("Arial", 12, FontStyle.Bold);
             this.Controls.Add(minesLabel);
 
             sizeLabel = new Label();
             sizeLabel.Text = "Размер поля:";
-            sizeLabel.Location = new Point(10, 10);
+            sizeLabel.Location = new Point(10, 40);
             sizeLabel.AutoSize = true;
             this.Controls.Add(sizeLabel);
 
-            sizeComboBox = new ComboBox();
-            sizeComboBox.Location = new Point(100, 10);
+            sizeComboBox = new ComboBox();//выбор размер поля
+            sizeComboBox.Location = new Point(100, 40);
+            sizeComboBox.Size = new Size(150, 30);
             sizeComboBox.Items.AddRange(new object[] { "Маленькое (10x10)", "Среднее (15x15)", "Большое (20x20)" });
             sizeComboBox.SelectedIndex = 0;
             sizeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            sizeComboBox.DropDownHeight = 100;
             this.Controls.Add(sizeComboBox);
 
             minesCountLabel = new Label();
             minesCountLabel.Text = "Количество мин:";
-            minesCountLabel.Location = new Point(10, 40);
+            minesCountLabel.Location = new Point(10, 70);
             minesCountLabel.AutoSize = true;
             this.Controls.Add(minesCountLabel);
 
-            minesComboBox = new ComboBox();
-            minesComboBox.Location = new Point(100, 40);
+            minesComboBox = new ComboBox(); //выбор кол-ва мин
+            minesComboBox.Location = new Point(100, 70);
+            minesComboBox.Size = new Size(150, 30);
             minesComboBox.Items.AddRange(new object[] { "Легко (15 мин)", "Средне (30 мин)", "Сложно (50 мин)" });
             minesComboBox.SelectedIndex = 0;
             minesComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            minesComboBox.DropDownHeight = 100;
             this.Controls.Add(minesComboBox);
 
-            Button newGameButton = new Button();
+            Button newGameButton = new Button();//игра "Сапер"
             newGameButton.Text = "Новая игра";
-            newGameButton.Location = new Point(300, 25);
+            newGameButton.Location = new Point(270, 55);
+            newGameButton.Size = new Size(100, 30);
             newGameButton.Click += (s, e) => StartNewGame();
             this.Controls.Add(newGameButton);
 
@@ -107,6 +112,7 @@ namespace Minesweeper
             this.BackColor = Color.LightGray;
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
+            this.Padding = new Padding(10);
         }
 
         private void ShowSettings()
@@ -130,12 +136,12 @@ namespace Minesweeper
                 case 2: minesCount = 50; break;
             }
 
-            if (minesCount >= fieldSize * fieldSize)
+            if (minesCount >= fieldSize * fieldSize)//мин не должно быть больше чем клеток
             {
                 minesCount = fieldSize * fieldSize - 1;
             }
 
-            minesLabel.Text = "Флаги: 0/" + minesCount;
+            minesLabel.Text = "Флаги: 0/" + minesCount;//обновление кол-ва мин
             flagsPlaced = 0;
 
             gamePanel.Controls.Clear();
@@ -143,10 +149,10 @@ namespace Minesweeper
             fieldValues = new int[fieldSize, fieldSize];
             revealed = new bool[fieldSize, fieldSize];
 
-            gamePanel.Size = new Size(fieldSize * 30, fieldSize * 30);
-            this.ClientSize = new Size(Math.Max(fieldSize * 30 + 20, 400), fieldSize * 30 + 120);
+            gamePanel.Size = new Size(fieldSize * 30, fieldSize * 30); //размер панели
+            this.ClientSize = new Size(Math.Max(fieldSize * 30 + 30, 400), fieldSize * 30 + 150);
 
-            for (int i = 0; i < fieldSize; i++)
+            for (int i = 0; i < fieldSize; i++)//кнопки на поле
             {
                 for (int j = 0; j < fieldSize; j++)
                 {
@@ -161,9 +167,9 @@ namespace Minesweeper
             }
 
             gameOver = false;
-            firstClick = true;
+            firstClick = true; //сброс
 
-            for (int i = 0; i < fieldSize; i++)
+            for (int i = 0; i < fieldSize; i++)//поле пустое до первого клика
             {
                 for (int j = 0; j < fieldSize; j++)
                 {
@@ -189,11 +195,11 @@ namespace Minesweeper
             {
                 if (firstClick)
                 {
-                    GenerateField(row, col);
+                    GenerateField(row, col);//генерация поля
                     firstClick = false;
                 }
 
-                if (button.Text == "🚩") return;
+                if (button.Text == "🚩") return; //клетки с фалжками не открываються
 
                 RevealCell(row, col);
 
@@ -208,7 +214,7 @@ namespace Minesweeper
             }
             else if (e.Button == MouseButtons.Right)
             {
-                if (!revealed[row, col])
+                if (!revealed[row, col])//флажок
                 {
                     if (button.Text == "🚩")
                     {
@@ -229,13 +235,13 @@ namespace Minesweeper
         {
             Random random = new Random();
 
-            int minesPlaced = 0;
+            int minesPlaced = 0;//расстановка мин 
             while (minesPlaced < minesCount)
             {
                 int row = random.Next(fieldSize);
                 int col = random.Next(fieldSize);
 
-                if ((row == safeRow && col == safeCol) ||
+                if ((row == safeRow && col == safeCol) || //на первой клетке нет мин
                     (Math.Abs(row - safeRow) <= 1 && Math.Abs(col - safeCol) <= 1))
                 {
                     continue;
@@ -247,7 +253,8 @@ namespace Minesweeper
                     minesPlaced++;
                 }
             }
-            for (int i = 0; i < fieldSize; i++)
+
+            for (int i = 0; i < fieldSize; i++)//кол-во мин вогрук
             {
                 for (int j = 0; j < fieldSize; j++)
                 {
@@ -289,17 +296,18 @@ namespace Minesweeper
 
             if (fieldValues[row, col] == -1)
             {
+                
                 fieldButtons[row, col].Text = "💣";
                 fieldButtons[row, col].BackColor = Color.Red;
             }
             else if (fieldValues[row, col] > 0)
             {
-                fieldButtons[row, col].Text = fieldValues[row, col].ToString();
+                fieldButtons[row, col].Text = fieldValues[row, col].ToString(); //число
                 fieldButtons[row, col].ForeColor = GetNumberColor(fieldValues[row, col]);
             }
             else
             {
-                fieldButtons[row, col].Text = "";
+                fieldButtons[row, col].Text = ""; //открытие соседних клеток
                 fieldButtons[row, col].BackColor = SystemColors.ControlLight;
 
                 for (int i = Math.Max(0, row - 1); i <= Math.Min(fieldSize - 1, row + 1); i++)
@@ -349,9 +357,8 @@ namespace Minesweeper
         private void GameOver(bool isWin)
         {
             gameOver = true;
-
-            for (int i = 0; i < fieldSize; i++)
-            {
+            for (int i = 0; i < fieldSize; i++) //открытие клеток
+            { 
                 for (int j = 0; j < fieldSize; j++)
                 {
                     if (!revealed[i, j])
